@@ -1,0 +1,102 @@
+---
+title: "Bonferroni Function Development"
+author: "Mike Seaman"
+date: "2 April 2020"
+output: html_notebook
+---
+
+This notebook is for developing a function that will construct Bonferroni
+confidence intervals.
+
+This is the bonf_ci function. 
+
+```{r}
+
+bonf_ci <- function(the_data, the_pairs, conf_level) {
+  
+# These next two lines are to create vectors for both the lower and upper
+# bounds of the confidence interval.
+  
+  lb <- 1:nrow(the_pairs)
+  ub <- 1:nrow(the_pairs)
+  
+# Now I add these to the matrix that we will return, but first I copy the
+# designation of pairs.
+  
+  the_cis <- cbind(the_pairs, lb, ub)
+  
+# I now calculate the confidence level when we have a number of comparisons.
+# Now that I can determine the number of comparisons with the numbe of rows
+# in the pairs matrix.
+  
+  pair_conf = 1- (1 - conf_level)/nrow(the_pairs)
+  
+# Now I loop for the number of comparisons that I am using to construct
+# confidence intervals.
+  
+  for (i in 1:nrow(the_pairs)){
+    
+# This pulls out the data that I need for the comparison on the designated
+# row, which is tracked by "i" in the loop.
+
+    pair <- subset(the_data, the_data[, 1] == the_pairs[i, 1] |
+                    the_data[, 1] == the_pairs[i, 2])
+    
+# This calculates the confidence interval.    
+    
+    t_results <- t.test(pair[, 2] ~ pair[, 1], conf.level = pair_conf)
+    
+# These lines pull out the lower and upper bounds and add them to the matrix
+# that I'm going to return.
+    
+    the_cis[i,3] <- t_results$conf.int[1]
+    the_cis[i,4] <- t_results$conf.int[2]
+  }
+  
+  return(the_cis)
+}
+
+```
+
+
+This is for testing the bonf_ci function with the hsb2 data. I assume that the
+hsb2 data are in the same directory as this notebook.
+
+```{r}
+
+hsb2 <- read.csv("hsb2.csv")
+
+
+# This is going to create the matrix to send to the function with my data.
+
+my_data <- cbind(hsb2$ses, hsb2$math)
+
+# This is going to select two pairs for testing and put them in a matrix.
+
+first <- c(3, 2)
+second <- c(1, 1)
+my_pairs <- cbind(first, second)
+
+# And now the grand test!
+
+bonf_ci(my_data, my_pairs, .95)
+
+```
+
+#### Future enhancements
+
+Here are some ideas for the future.
+
+* Make it clear which way the means are subtracted
+
+* Be able to send a data frame instead of a matrix
+
+* Be able to send all the data and then indicate which variables to use in the
+comparisons
+
+* Be able to use a factor instead of numbers for the explanatory variable
+
+* Include some error checking, such as making sure the user picked groups 
+that are actually in the data
+
+* Be able to do complex comparisons, not just pairwise
